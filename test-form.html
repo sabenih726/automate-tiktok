@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Form - Auto Fill</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #FFF5F7;
+    }
+    h2 { color: #FFB6C1; }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #5D5D5D;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1.5px solid #F0F0F0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #FFB6C1, #DDA0DD);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    .info {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border-left: 3px solid #FFB6C1;
+    }
+  </style>
+</head>
+<body>
+  <h2>🧪 Test Form Auto-Fill</h2>
+  
+  <div class="info">
+    <strong>Cara Test:</strong><br>
+    1. Isi profile di app utama<br>
+    2. Klik tombol "Test Auto-Fill" di bawah<br>
+    3. Form akan terisi otomatis
+  </div>
+
+  <form id="testForm">
+    <div class="form-group">
+      <label>Nama Penerima:</label>
+      <input type="text" name="name" placeholder="Nama lengkap">
+    </div>
+    
+    <div class="form-group">
+      <label>Nomor HP:</label>
+      <input type="tel" name="phone" placeholder="08xx-xxxx-xxxx">
+    </div>
+    
+    <div class="form-group">
+      <label>Alamat Lengkap:</label>
+      <textarea name="address" rows="3" placeholder="Alamat pengiriman"></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label>Kode Pos:</label>
+      <input type="text" name="postal" placeholder="12345">
+    </div>
+    
+    <button type="button" id="fillBtn">🚀 Test Auto-Fill</button>
+    <button type="button" id="clearBtn">🗑️ Clear Form</button>
+  </form>
+
+  <div class="info" id="result" style="display:none; margin-top: 20px;">
+    <strong>✅ Auto-Fill Berhasil!</strong><br>
+    <span id="resultText"></span>
+  </div>
+
+  <script src="./js/autofill.js"></script>
+  <script>
+    const fillBtn = document.getElementById('fillBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const resultDiv = document.getElementById('result');
+    const resultText = document.getElementById('resultText');
+
+    fillBtn.addEventListener('click', async () => {
+      // Load profile dari localStorage
+      const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      
+      if (!profile.name) {
+        alert('❌ Profile belum diisi!\n\nBuka aplikasi utama dulu dan isi profile.');
+        window.open('./index.html', '_blank');
+        return;
+      }
+
+      // Load settings
+      const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+      const delay = settings.fillDelay || 150;
+
+      // Jalankan auto-fill
+      console.log('Starting auto-fill with delay:', delay, 'ms');
+      const engine = new AutoFillEngine(profile, { delay: delay, debug: true });
+      
+      const success = await engine.fillForm();
+      
+      if (success) {
+        resultDiv.style.display = 'block';
+        resultText.textContent = `Data terisi: ${profile.name}, ${profile.phone}`;
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      document.getElementById('testForm').reset();
+      resultDiv.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
