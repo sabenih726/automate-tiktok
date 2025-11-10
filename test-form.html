@@ -6,29 +6,47 @@
   <title>Test Form - Auto Fill</title>
   <style>
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       max-width: 500px;
       margin: 40px auto;
       padding: 20px;
       background: #FFF5F7;
     }
-    h2 { color: #FFB6C1; }
+    
+    h2 { 
+      color: #FFB6C1; 
+      margin-bottom: 20px;
+    }
+    
     .form-group {
       margin-bottom: 16px;
     }
+    
     label {
       display: block;
       margin-bottom: 6px;
       font-weight: 500;
       color: #5D5D5D;
+      font-size: 14px;
     }
+    
     input, textarea {
       width: 100%;
       padding: 12px;
       border: 1.5px solid #F0F0F0;
       border-radius: 8px;
       font-size: 14px;
+      font-family: inherit;
+      transition: all 0.3s;
     }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #FFB6C1;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(255, 182, 193, 0.1);
+    }
+    
     button {
       padding: 12px 24px;
       background: linear-gradient(135deg, #FFB6C1, #DDA0DD);
@@ -38,16 +56,67 @@
       cursor: pointer;
       font-weight: 600;
       margin-right: 10px;
+      transition: all 0.3s;
     }
+    
     button:hover {
-      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 182, 193, 0.3);
     }
+    
+    button:active {
+      transform: scale(0.98);
+    }
+    
     .info {
       background: white;
       padding: 16px;
       border-radius: 8px;
-      margin-top: 20px;
+      margin: 20px 0;
       border-left: 3px solid #FFB6C1;
+    }
+    
+    .success {
+      background: #98D8C8;
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 16px;
+      display: none;
+    }
+    
+    .success.show {
+      display: block;
+      animation: slideIn 0.3s;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .stats {
+      background: #FFF9FC;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .field-highlight {
+      animation: highlight 0.5s;
+    }
+    
+    @keyframes highlight {
+      0% { background: #FFE4E1; }
+      100% { background: white; }
     }
   </style>
 </head>
@@ -55,79 +124,192 @@
   <h2>🧪 Test Form Auto-Fill</h2>
   
   <div class="info">
-    <strong>Cara Test:</strong><br>
-    1. Isi profile di app utama<br>
-    2. Klik tombol "Test Auto-Fill" di bawah<br>
-    3. Form akan terisi otomatis
+    <strong>📌 Cara Test:</strong><br>
+    1. Pastikan sudah isi profile di app utama<br>
+    2. Klik tombol "Test Auto-Fill"<br>
+    3. Perhatikan form terisi otomatis dengan delay<br>
+    4. Cek console untuk debug info
   </div>
 
   <form id="testForm">
     <div class="form-group">
       <label>Nama Penerima:</label>
-      <input type="text" name="name" placeholder="Nama lengkap">
+      <input type="text" name="name" id="nameField" placeholder="Nama lengkap">
     </div>
     
     <div class="form-group">
       <label>Nomor HP:</label>
-      <input type="tel" name="phone" placeholder="08xx-xxxx-xxxx">
+      <input type="tel" name="phone" id="phoneField" placeholder="08xx-xxxx-xxxx">
     </div>
     
     <div class="form-group">
       <label>Alamat Lengkap:</label>
-      <textarea name="address" rows="3" placeholder="Alamat pengiriman"></textarea>
+      <textarea name="address" id="addressField" rows="3" placeholder="Alamat pengiriman"></textarea>
     </div>
     
     <div class="form-group">
       <label>Kode Pos:</label>
-      <input type="text" name="postal" placeholder="12345">
+      <input type="text" name="postal" id="postalField" placeholder="12345">
     </div>
     
     <button type="button" id="fillBtn">🚀 Test Auto-Fill</button>
     <button type="button" id="clearBtn">🗑️ Clear Form</button>
+    <button type="button" id="validateBtn">✅ Validate</button>
   </form>
 
-  <div class="info" id="result" style="display:none; margin-top: 20px;">
-    <strong>✅ Auto-Fill Berhasil!</strong><br>
-    <span id="resultText"></span>
+  <div class="success" id="successMsg">
+    ✅ Auto-Fill Berhasil!
   </div>
 
+  <div class="stats" id="stats" style="display:none;">
+    <strong>📊 Statistics:</strong><br>
+    <span id="statsText"></span>
+  </div>
+
+  <!-- Load autofill engine -->
   <script src="./js/autofill.js"></script>
+  
   <script>
+    // Get elements
     const fillBtn = document.getElementById('fillBtn');
     const clearBtn = document.getElementById('clearBtn');
-    const resultDiv = document.getElementById('result');
-    const resultText = document.getElementById('resultText');
+    const validateBtn = document.getElementById('validateBtn');
+    const successMsg = document.getElementById('successMsg');
+    const statsDiv = document.getElementById('stats');
+    const statsText = document.getElementById('statsText');
 
+    // Test Auto-Fill
     fillBtn.addEventListener('click', async () => {
-      // Load profile dari localStorage
+      // Load profile from localStorage
       const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
       
       if (!profile.name) {
-        alert('❌ Profile belum diisi!\n\nBuka aplikasi utama dulu dan isi profile.');
+        alert('❌ Profile belum diisi!\n\nSilakan isi profile di aplikasi utama terlebih dahulu.');
+        // Open main app in new tab
         window.open('./index.html', '_blank');
         return;
       }
 
       // Load settings
       const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-      const delay = settings.fillDelay || 150;
+      const delay = settings.fillDelay || 100;
 
-      // Jalankan auto-fill
-      console.log('Starting auto-fill with delay:', delay, 'ms');
-      const engine = new AutoFillEngine(profile, { delay: delay, debug: true });
+      console.log('📋 Profile loaded:', profile);
+      console.log('⚙️ Settings:', settings);
+      console.log(`⏱️ Starting auto-fill with delay: ${delay} ms`);
+
+      // Clear form first
+      clearForm();
+
+      // Initialize auto-fill engine
+      const engine = new AutoFillEngine(profile, { 
+        delay: delay, 
+        debug: true 
+      });
       
-      const success = await engine.fillForm();
-      
-      if (success) {
-        resultDiv.style.display = 'block';
-        resultText.textContent = `Data terisi: ${profile.name}, ${profile.phone}`;
+      try {
+        // Run auto-fill
+        const success = await engine.fillForm();
+        
+        if (success) {
+          // Show success message
+          successMsg.classList.add('show');
+          setTimeout(() => successMsg.classList.remove('show'), 3000);
+          
+          // Show statistics
+          const stats = engine.getStats();
+          statsText.innerHTML = `
+            Fields detected: ${stats.filledFields}/${stats.totalFields}<br>
+            Delay used: ${stats.delay}ms<br>
+            Status: ✅ Complete
+          `;
+          statsDiv.style.display = 'block';
+          
+          // Highlight filled fields
+          document.querySelectorAll('input, textarea').forEach(field => {
+            if (field.value) {
+              field.classList.add('field-highlight');
+              setTimeout(() => field.classList.remove('field-highlight'), 1000);
+            }
+          });
+          
+          console.log('✅ Auto-fill completed successfully');
+        } else {
+          console.error('❌ Auto-fill failed - no fields detected');
+          alert('Tidak ada field yang terdeteksi!');
+        }
+      } catch (error) {
+        console.error('❌ Auto-fill error:', error);
+        alert('Error: ' + error.message);
       }
     });
 
+    // Clear form
     clearBtn.addEventListener('click', () => {
-      document.getElementById('testForm').reset();
-      resultDiv.style.display = 'none';
+      clearForm();
+      successMsg.classList.remove('show');
+      statsDiv.style.display = 'none';
+      console.log('🗑️ Form cleared');
     });
+
+    // Validate form
+    validateBtn.addEventListener('click', () => {
+      const fields = {
+        name: document.getElementById('nameField').value,
+        phone: document.getElementById('phoneField').value,
+        address: document.getElementById('addressField').value,
+        postal: document.getElementById('postalField').value
+      };
+      
+      let valid = true;
+      let errors = [];
+      
+      if (!fields.name) {
+        errors.push('Nama kosong');
+        valid = false;
+      }
+      
+      if (!fields.phone) {
+        errors.push('Nomor HP kosong');
+        valid = false;
+      }
+      
+      if (!fields.address) {
+        errors.push('Alamat kosong');
+        valid = false;
+      }
+      
+      if (valid) {
+        alert('✅ Form valid!\n\nSemua field terisi dengan benar.');
+      } else {
+        alert('❌ Form tidak valid!\n\nError:\n' + errors.join('\n'));
+      }
+      
+      console.log('📋 Validation result:', { valid, fields, errors });
+    });
+
+    function clearForm() {
+      document.getElementById('testForm').reset();
+      document.querySelectorAll('input, textarea').forEach(field => {
+        field.classList.remove('field-highlight');
+      });
+    }
+
+    // Listen for form events (for debugging)
+    document.querySelectorAll('input, textarea').forEach(field => {
+      field.addEventListener('input', (e) => {
+        console.log(`📝 Input event on ${e.target.name}:`, e.target.value);
+      });
+      
+      field.addEventListener('change', (e) => {
+        console.log(`🔄 Change event on ${e.target.name}:`, e.target.value);
+      });
+    });
+
+    // Initial message
+    console.log('%c🧪 Test Form Ready', 'color: #FFB6C1; font-size: 16px; font-weight: bold');
+    console.log('Profile exists:', !!localStorage.getItem('userProfile'));
+    console.log('Settings exists:', !!localStorage.getItem('appSettings'));
   </script>
 </body>
 </html>
