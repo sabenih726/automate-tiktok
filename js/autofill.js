@@ -91,59 +91,85 @@ class AutoFillEngine {
     );
   }
 
-  // Fill all detected fields
+  // Fill all detected fields with delay
   async fillFields(fieldMap) {
     let fillDelay = 0;
 
     for (let [key, field] of Object.entries(fieldMap)) {
       const value = this.profile[key];
       if (value) {
-        await this.delay(fillDelay);
+        // Wait before filling each field
+        await this.sleep(fillDelay);
         this.fillField(field, value);
-        fillDelay += this.delay;
+        // Increment delay for next field
+        fillDelay = this.delay;
       }
     }
   }
 
-  // Fill single field
+  // Fill single field with animation
   fillField(element, value) {
-    this.log(`Filling ${element.name || element.id} with: ${value}`);
+    this.log(`Filling ${element.name || element.id || 'field'} with: ${value}`);
 
     // Focus element
     element.focus();
+    
+    // Clear existing value
+    element.value = '';
+    
+    // Simulate typing effect
+    this.simulateTyping(element, value);
+  }
 
-    // Set value
+  // Simulate typing for more natural filling
+  async simulateTyping(element, value) {
+    // For faster performance, just set the value directly
+    // If you want typing effect, uncomment the code below
+    
     element.value = value;
-
-    // Trigger events to ensure form validation
     this.triggerEvents(element);
-
-    // Blur element
+    
+    /* 
+    // Typing effect (optional - slower but more realistic)
+    for (let i = 0; i < value.length; i++) {
+      element.value = value.substring(0, i + 1);
+      this.triggerEvents(element);
+      await this.sleep(10); // Small delay between characters
+    }
+    */
+    
+    // Blur after filling
     setTimeout(() => element.blur(), 50);
   }
 
-  // Trigger necessary events
+  // Trigger necessary events for form validation
   triggerEvents(element) {
-    const events = ['input', 'change', 'blur'];
-    
-    events.forEach(eventType => {
-      const event = new Event(eventType, { 
-        bubbles: true,
-        cancelable: true 
-      });
-      element.dispatchEvent(event);
-    });
-
-    // Also trigger InputEvent for modern frameworks
+    // Trigger input event
     const inputEvent = new InputEvent('input', {
       bubbles: true,
       cancelable: true,
       data: element.value
     });
     element.dispatchEvent(inputEvent);
+
+    // Trigger change event
+    const changeEvent = new Event('change', {
+      bubbles: true,
+      cancelable: true
+    });
+    element.dispatchEvent(changeEvent);
+
+    // Some forms listen to keyup
+    const keyupEvent = new KeyboardEvent('keyup', {
+      bubbles: true,
+      cancelable: true,
+      key: 'a',
+      keyCode: 65
+    });
+    element.dispatchEvent(keyupEvent);
   }
 
-  // Delay helper
+  // Sleep/delay helper function
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -153,6 +179,21 @@ class AutoFillEngine {
     if (this.debug) {
       console.log('[AutoFill]', ...args);
     }
+  }
+
+  // Get fill statistics
+  getStats() {
+    const filled = {};
+    for (let key in this.profile) {
+      if (this.profile[key]) {
+        filled[key] = true;
+      }
+    }
+    return {
+      totalFields: Object.keys(this.profile).length,
+      filledFields: Object.keys(filled).length,
+      delay: this.delay
+    };
   }
 }
 
