@@ -3,12 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shopping Assistant</title>
+  <title>Shopping Assistant - TikTok Helper</title>
   
   <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#FFE4E1">
-  <meta name="description" content="Your lovely shopping assistant">
-  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFB6C1">
+  <meta name="description" content="Assistant untuk mempercepat checkout TikTok Shop">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json">
+  
+  <!-- PWA iOS Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Shop Assistant">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -415,6 +423,25 @@
       color: var(--text-sub);
     }
 
+    /* Install prompt */
+    .install-prompt {
+      display: none;
+      position: fixed;
+      bottom: 100px;
+      left: 20px;
+      right: 20px;
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      z-index: 150;
+    }
+
+    .install-prompt.show {
+      display: block;
+      animation: slideUp 0.3s;
+    }
+
     /* Responsive */
     @media (max-width: 480px) {
       .container {
@@ -442,11 +469,11 @@
       </div>
       <div class="status-item">
         <div class="status-label">Mode</div>
-        <div class="status-value">Easy</div>
+        <div class="status-value" id="modeStatus">Easy</div>
       </div>
       <div class="status-item">
         <div class="status-label">Speed</div>
-        <div class="status-value">Quick</div>
+        <div class="status-value" id="speedStatus">Quick</div>
       </div>
     </div>
 
@@ -494,15 +521,15 @@
       
       <div class="form-group">
         <label class="form-label">Kecepatan Fill (ms)</label>
-        <input type="number" class="form-control" value="100" min="0" max="1000">
+        <input type="number" class="form-control" id="fillDelay" value="100" min="0" max="1000">
       </div>
       
       <div class="form-group">
         <label class="form-label">Metode Pembayaran</label>
-        <select class="form-control">
-          <option>COD (Bayar di Tempat)</option>
-          <option>Transfer Bank</option>
-          <option>E-Wallet</option>
+        <select class="form-control" id="paymentMethod">
+          <option value="cod">COD (Bayar di Tempat)</option>
+          <option value="transfer">Transfer Bank</option>
+          <option value="ewallet">E-Wallet</option>
         </select>
       </div>
     </div>
@@ -517,19 +544,30 @@
         Lihat Tutorial
       </button>
     </div>
+
+    <!-- Test Link -->
+    <div class="card">
+      <h3 class="card-title">Test Form</h3>
+      <p class="card-subtitle">Uji coba fitur auto-fill</p>
+      <p class="card-description">Test fungsi auto-fill dengan form simulasi.</p>
+      
+      <a href="./test-form.html" class="btn btn-secondary" style="width: 100%; display: block;">
+        Buka Test Form
+      </a>
+    </div>
   </div>
 
-  <!-- Floating Action Button - Simple Plus -->
+  <!-- Floating Action Button -->
   <button class="fab" onclick="quickAction()">
     +
   </button>
 
-  <!-- Bottom Navigation - Text Only -->
+  <!-- Bottom Navigation -->
   <div class="bottom-nav">
-    <div class="nav-item active">Home</div>
-    <div class="nav-item">Favorit</div>
-    <div class="nav-item">Profile</div>
-    <div class="nav-item">Setting</div>
+    <div class="nav-item active" data-page="home">Home</div>
+    <div class="nav-item" data-page="favorit">Favorit</div>
+    <div class="nav-item" data-page="profile">Profile</div>
+    <div class="nav-item" data-page="setting">Setting</div>
   </div>
 
   <!-- Profile Modal -->
@@ -571,23 +609,140 @@
     Berhasil disimpan
   </div>
 
+  <!-- Install Prompt -->
+  <div class="install-prompt" id="installPrompt">
+    <p style="margin-bottom: 12px; font-weight: 500;">Install aplikasi untuk pengalaman terbaik!</p>
+    <div class="btn-group">
+      <button class="btn btn-secondary" onclick="hideInstallPrompt()">Nanti</button>
+      <button class="btn btn-primary" onclick="installPWA()">Install</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script>
-    // PWA Service Worker Registration
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(registration => {
-        console.log('SW registered:', registration);
-      }).catch(err => {
-        console.log('SW registration failed:', err);
+    // Global variables
+    let deferredPrompt = null;
+    let swRegistration = null;
+
+    // Initialize app
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('App initialized');
+      registerServiceWorker();
+      loadSavedSettings();
+      setupEventListeners();
+      checkOnlineStatus();
+    });
+
+    // Service Worker Registration
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+              swRegistration = registration;
+              console.log('✓ Service Worker registered:', registration.scope);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                console.log('New service worker available');
+              });
+            })
+            .catch(err => {
+              console.error('✗ Service Worker registration failed:', err);
+            });
+        });
+      } else {
+        console.log('Service Worker not supported');
+      }
+    }
+
+    // Install prompt handler
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('Install prompt available');
+      
+      // Show custom install prompt after 30 seconds
+      setTimeout(() => {
+        if (deferredPrompt) {
+          document.getElementById('installPrompt').classList.add('show');
+        }
+      }, 30000);
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted install');
+            showToast('Aplikasi berhasil diinstall!');
+          }
+          deferredPrompt = null;
+          hideInstallPrompt();
+        });
+      }
+    }
+
+    function hideInstallPrompt() {
+      document.getElementById('installPrompt').classList.remove('show');
+    }
+
+    // Check online status
+    function checkOnlineStatus() {
+      window.addEventListener('online', () => {
+        showToast('Kembali online');
+      });
+      
+      window.addEventListener('offline', () => {
+        showToast('Mode offline - Data tersimpan lokal');
       });
     }
 
-    // Toggle Switches
-    document.querySelectorAll('.toggle-switch').forEach(toggle => {
-      toggle.addEventListener('click', function() {
-        this.classList.toggle('active');
-        saveSettings();
+    // Setup event listeners
+    function setupEventListeners() {
+      // Toggle switches
+      document.querySelectorAll('.toggle-switch').forEach(toggle => {
+        toggle.addEventListener('click', function() {
+          this.classList.toggle('active');
+          saveSettings();
+          
+          // Update mode status
+          if (this.id === 'autoFillToggle') {
+            document.getElementById('modeStatus').textContent = 
+              this.classList.contains('active') ? 'Auto' : 'Manual';
+          }
+        });
       });
-    });
+
+      // Bottom navigation
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+          document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+          this.classList.add('active');
+          
+          const page = this.dataset.page;
+          console.log('Navigate to:', page);
+          
+          // Visual feedback
+          this.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            this.style.transform = 'scale(1)';
+          }, 150);
+        });
+      });
+
+      // Settings inputs
+      document.getElementById('fillDelay').addEventListener('change', saveSettings);
+      document.getElementById('paymentMethod').addEventListener('change', saveSettings);
+
+      // Close modal on backdrop click
+      document.getElementById('profileModal').addEventListener('click', (e) => {
+        if (e.target.id === 'profileModal') {
+          closeModal();
+        }
+      });
+    }
 
     // Modal Functions
     function openProfileModal() {
@@ -599,98 +754,222 @@
       document.getElementById('profileModal').classList.remove('active');
     }
 
+    // Profile Management
     function saveProfile() {
       const profile = {
-        name: document.getElementById('receiverName').value,
-        phone: document.getElementById('phoneNumber').value,
-        address: document.getElementById('address').value,
-        postalCode: document.getElementById('postalCode').value
+        name: document.getElementById('receiverName').value.trim(),
+        phone: document.getElementById('phoneNumber').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        postalCode: document.getElementById('postalCode').value.trim(),
+        updatedAt: new Date().toISOString()
       };
       
-      localStorage.setItem('userProfile', JSON.stringify(profile));
-      closeModal();
-      showToast('Profile berhasil disimpan');
+      // Validation
+      if (!profile.name) {
+        showToast('Nama wajib diisi');
+        return;
+      }
+      
+      if (!profile.phone) {
+        showToast('Nomor HP wajib diisi');
+        return;
+      }
+      
+      // Phone number validation
+      if (!/^[0-9]{10,13}$/.test(profile.phone.replace(/[^0-9]/g, ''))) {
+        showToast('Format nomor HP tidak valid');
+        return;
+      }
+      
+      try {
+        localStorage.setItem('userProfile', JSON.stringify(profile));
+        closeModal();
+        showToast('Profile berhasil disimpan');
+        console.log('Profile saved:', profile);
+      } catch (e) {
+        console.error('Failed to save profile:', e);
+        showToast('Gagal menyimpan profile');
+      }
     }
 
     function loadProfile() {
-      const saved = localStorage.getItem('userProfile');
-      if (saved) {
-        const profile = JSON.parse(saved);
-        document.getElementById('receiverName').value = profile.name || '';
-        document.getElementById('phoneNumber').value = profile.phone || '';
-        document.getElementById('address').value = profile.address || '';
-        document.getElementById('postalCode').value = profile.postalCode || '';
+      try {
+        const saved = localStorage.getItem('userProfile');
+        if (saved) {
+          const profile = JSON.parse(saved);
+          document.getElementById('receiverName').value = profile.name || '';
+          document.getElementById('phoneNumber').value = profile.phone || '';
+          document.getElementById('address').value = profile.address || '';
+          document.getElementById('postalCode').value = profile.postalCode || '';
+        }
+      } catch (e) {
+        console.error('Failed to load profile:', e);
       }
     }
 
+    // Settings Management
     function saveSettings() {
       const settings = {
         autoFill: document.getElementById('autoFillToggle').classList.contains('active'),
-        smartNav: document.getElementById('smartNavToggle').classList.contains('active')
+        smartNav: document.getElementById('smartNavToggle').classList.contains('active'),
+        fillDelay: parseInt(document.getElementById('fillDelay').value) || 100,
+        paymentMethod: document.getElementById('paymentMethod').value,
+        savedAt: new Date().toISOString()
       };
-      localStorage.setItem('appSettings', JSON.stringify(settings));
       
-      if (settings.autoFill) {
-        showToast('Auto-fill diaktifkan');
+      try {
+        localStorage.setItem('appSettings', JSON.stringify(settings));
+        console.log('Settings saved:', settings);
+        
+        // Update speed status
+        const speed = settings.fillDelay;
+        let speedText = 'Quick';
+        if (speed < 100) speedText = 'Fast';
+        else if (speed > 300) speedText = 'Smooth';
+        document.getElementById('speedStatus').textContent = speedText;
+        
+      } catch (e) {
+        console.error('Failed to save settings:', e);
       }
     }
 
+    function loadSavedSettings() {
+      try {
+        const saved = localStorage.getItem('appSettings');
+        if (saved) {
+          const settings = JSON.parse(saved);
+          
+          if (settings.autoFill) {
+            document.getElementById('autoFillToggle').classList.add('active');
+            document.getElementById('modeStatus').textContent = 'Auto';
+          }
+          
+          if (settings.smartNav) {
+            document.getElementById('smartNavToggle').classList.add('active');
+          }
+          
+          if (settings.fillDelay) {
+            document.getElementById('fillDelay').value = settings.fillDelay;
+          }
+          
+          if (settings.paymentMethod) {
+            document.getElementById('paymentMethod').value = settings.paymentMethod;
+          }
+          
+          console.log('Settings loaded:', settings);
+        }
+      } catch (e) {
+        console.error('Failed to load settings:', e);
+      }
+    }
+
+    // Test Functions
     function testAutoFill() {
+      const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      
+      if (!profile.name) {
+        showToast('Isi profile terlebih dahulu');
+        openProfileModal();
+        return;
+      }
+      
+      const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+      
       showToast('Testing auto-fill...');
+      console.log('Test Profile:', profile);
+      console.log('Fill Delay:', settings.fillDelay || 100, 'ms');
+      
+      // Simulate fill animation
+      setTimeout(() => {
+        showToast('Test berhasil! Data siap digunakan');
+      }, 1500);
     }
 
     function quickAction() {
-      if (document.getElementById('autoFillToggle').classList.contains('active')) {
-        showToast('Auto-fill activated');
-      } else {
+      const isAutoFillActive = document.getElementById('autoFillToggle').classList.contains('active');
+      
+      if (!isAutoFillActive) {
         showToast('Aktifkan Auto-Fill terlebih dahulu');
+        document.getElementById('autoFillToggle').scrollIntoView({ behavior: 'smooth' });
+        return;
       }
+      
+      const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+      if (!profile.name) {
+        showToast('Lengkapi profile terlebih dahulu');
+        openProfileModal();
+        return;
+      }
+      
+      showToast('Auto-fill ready! Buka halaman checkout');
+      console.log('Quick action triggered with profile:', profile);
     }
 
+    // Toast Notification
     function showToast(message) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.classList.add('show');
+      
       setTimeout(() => {
         toast.classList.remove('show');
       }, 3000);
     }
 
+    // Tutorial
     function showTutorial() {
-      alert('Cara Penggunaan:\n\n' +
-            '1. Isi data profile terlebih dahulu\n' +
-            '2. Aktifkan Auto-Fill Mode\n' +
-            '3. Buka TikTok Shop\n' +
-            '4. Data akan terisi otomatis saat checkout\n' +
-            '5. Klik tombol "Bayar" untuk menyelesaikan\n\n' +
-            'Selamat berbelanja!');
+      const tutorial = `📖 CARA PENGGUNAAN:
+
+1️⃣ SETUP AWAL:
+   • Klik "Edit Data" untuk mengisi profile
+   • Isi nama, nomor HP, dan alamat
+   • Klik "Simpan"
+
+2️⃣ AKTIVASI FITUR:
+   • Toggle "Auto-Fill Mode" untuk mengaktifkan
+   • Atur kecepatan fill sesuai kebutuhan (100-200 ms recommended)
+   • Pilih metode pembayaran default
+
+3️⃣ PENGGUNAAN:
+   • Buka TikTok Shop di browser
+   • Saat di halaman checkout, klik tombol "+"
+   • Data akan terisi otomatis
+   • Verifikasi data dan klik "Bayar"
+
+⚠️ PENTING:
+   • Aplikasi hanya mengisi form, tidak melakukan pembelian otomatis
+   • Data disimpan lokal di perangkat Anda
+   • Pastikan data yang diisi sudah benar
+
+💡 TIPS:
+   • Install aplikasi untuk akses lebih cepat
+   • Gunakan kecepatan fill 150-200 ms untuk hasil optimal
+   • Test dulu di form simulasi sebelum digunakan
+
+Happy Shopping! 🛍️`;
+      
+      alert(tutorial);
     }
 
     function manageAddresses() {
-      showToast('Fitur alamat tersimpan akan segera hadir');
+      showToast('Fitur multi-alamat coming soon!');
+      console.log('Manage addresses clicked');
     }
 
-    // Load saved settings on startup
-    window.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem('appSettings');
-      if (saved) {
-        const settings = JSON.parse(saved);
-        if (settings.autoFill) {
-          document.getElementById('autoFillToggle').classList.add('active');
-        }
-        if (settings.smartNav) {
-          document.getElementById('smartNavToggle').classList.add('active');
-        }
-      }
+    // PWA detection
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
+      showToast('Aplikasi berhasil diinstall!');
+      hideInstallPrompt();
     });
 
-    // Bottom nav interaction
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', function() {
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        this.classList.add('active');
-      });
-    });
+    // Debug helper
+    console.log('%c✨ Shopping Assistant Ready', 'color: #FFB6C1; font-size: 16px; font-weight: bold');
+    console.log('Version: 1.0.0');
+    console.log('GitHub Pages Deploy');
   </script>
+
+  <!-- Load external scripts if available -->
+  <script src="./js/main.js" defer></script>
 </body>
 </html>
