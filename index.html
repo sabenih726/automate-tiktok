@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopping Assistant</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#FFE4E1">
+  <meta name="description" content="Your lovely shopping assistant">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #FFB6C1;
+      --secondary: #DDA0DD;
+      --accent: #F0BBD8;
+      --success: #98D8C8;
+      --warning: #FFDAB9;
+      --bg: #FFF5F7;
+      --card-bg: #FFFFFF;
+      --text-main: #5D5D5D;
+      --text-sub: #9B9B9B;
+      --radius: 16px;
+      --shadow: 0 2px 15px rgba(255, 182, 193, 0.12);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #FFF5F7 0%, #FFFFFF 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    /* Clean Header */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: 0 2px 15px rgba(255, 182, 193, 0.2);
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.3px;
+    }
+
+    /* Minimal Status Bar */
+    .status-bar {
+      display: flex;
+      justify-content: space-around;
+      background: white;
+      padding: 16px;
+      margin: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .status-item {
+      text-align: center;
+      flex: 1;
+    }
+
+    .status-label {
+      font-size: 11px;
+      color: var(--text-sub);
+      font-weight: 500;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-right: 6px;
+    }
+
+    .container {
+      padding: 0 20px 90px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* Minimal Cards */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 25px rgba(255, 182, 193, 0.18);
+      border-left-color: var(--primary);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 16px;
+      font-weight: 400;
+    }
+
+    .card-description {
+      font-size: 14px;
+      color: var(--text-sub);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* Clean Toggle */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: #FFF9FC;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      background: #E8E8E8;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .toggle-switch.active {
+      background: var(--primary);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      top: 2px;
+      left: 2px;
+      transition: 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .toggle-switch.active::after {
+      left: 26px;
+    }
+
+    /* Clean Form */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border: 1.5px solid #F0F0F0;
+      border-radius: 10px;
+      color: var(--text-main);
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: 0.3s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+    }
+
+    /* Minimal Buttons */
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 182, 193, 0.3);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg);
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-group .btn {
+      flex: 1;
+    }
+
+    /* Minimal FAB */
+    .fab {
+      position: fixed;
+      bottom: 85px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(255, 182, 193, 0.35);
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 700;
+      transition: all 0.3s;
+      z-index: 100;
+      border: none;
+    }
+
+    .fab:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(255, 182, 193, 0.45);
+    }
+
+    /* Clean Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #F5F5F5;
+      display: flex;
+      justify-content: space-around;
+      padding: 14px 0;
+      z-index: 99;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+    }
+
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-weight: 500;
+      padding: 4px;
+    }
+
+    .nav-item.active {
+      color: var(--primary);
+    }
+
+    .nav-item:hover {
+      color: var(--primary);
+    }
+
+    /* Clean Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: var(--radius);
+      padding: 28px;
+      max-width: 380px;
+      width: 90%;
+      animation: slideUp 0.3s;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      border: 1px solid #F0F0F0;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 20px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Clean Toast */
+    .toast {
+      position: fixed;
+      top: 30px;
+      right: 20px;
+      background: var(--success);
+      color: white;
+      padding: 14px 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(152, 216, 200, 0.25);
+      transform: translateX(400px);
+      transition: transform 0.3s;
+      z-index: 2000;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #F0F0F0;
+      margin: 20px 0;
+    }
+
+    /* Small text helper */
+    .text-small {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 15px 90px;
+      }
+      
+      header h1 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Shopping Assistant</h1>
+  </header>
+
+  <div class="container">
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-item">
+        <div class="status-label">Status</div>
+        <div class="status-value"><span class="status-dot"></span>Active</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Mode</div>
+        <div class="status-value">Easy</div>
+      </div>
+      <div class="status-item">
+        <div class="status-label">Speed</div>
+        <div class="status-value">Quick</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="card">
+      <h3 class="card-title">Quick Shopping</h3>
+      <p class="card-subtitle">Belanja jadi lebih mudah</p>
+      <p class="card-description">Aktifkan fitur auto-fill untuk mempercepat proses checkout saat berbelanja online.</p>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">Auto-Fill Mode</span>
+        <div class="toggle-switch" id="autoFillToggle"></div>
+      </div>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">Smart Navigate</span>
+        <div class="toggle-switch" id="smartNavToggle"></div>
+      </div>
+      
+      <button class="btn btn-primary" onclick="testAutoFill()" style="width: 100%; margin-top: 16px;">
+        Jalankan Test
+      </button>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="card">
+      <h3 class="card-title">Profile Management</h3>
+      <p class="card-subtitle">Data pengiriman</p>
+      <p class="card-description">Kelola data pribadi dan alamat pengiriman untuk memudahkan proses belanja.</p>
+      
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="openProfileModal()">
+          Edit Data
+        </button>
+        <button class="btn btn-secondary" onclick="manageAddresses()">
+          Alamat
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings Card -->
+    <div class="card">
+      <h3 class="card-title">Pengaturan</h3>
+      <p class="card-subtitle">Sesuaikan preferensi</p>
+      
+      <div class="form-group">
+        <label class="form-label">Kecepatan Fill (ms)</label>
+        <input type="number" class="form-control" value="100" min="0" max="1000">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Metode Pembayaran</label>
+        <select class="form-control">
+          <option>COD (Bayar di Tempat)</option>
+          <option>Transfer Bank</option>
+          <option>E-Wallet</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Help Card -->
+    <div class="card">
+      <h3 class="card-title">Bantuan</h3>
+      <p class="card-subtitle">Panduan penggunaan</p>
+      <p class="card-description">Pelajari cara menggunakan aplikasi ini dengan mudah dan efektif.</p>
+      
+      <button class="btn btn-secondary" onclick="showTutorial()" style="width: 100%;">
+        Lihat Tutorial
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating Action Button - Simple Plus -->
+  <button class="fab" onclick="quickAction()">
+    +
+  </button>
+
+  <!-- Bottom Navigation - Text Only -->
+  <div class="bottom-nav">
+    <div class="nav-item active">Home</div>
+    <div class="nav-item">Favorit</div>
+    <div class="nav-item">Profile</div>
+    <div class="nav-item">Setting</div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal" id="profileModal">
+    <div class="modal-content">
+      <h3 class="modal-title">Edit Profile</h3>
+      
+      <div class="form-group">
+        <label class="form-label">Nama Penerima</label>
+        <input type="text" class="form-control" id="receiverName" placeholder="Masukkan nama lengkap">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Nomor HP</label>
+        <input type="tel" class="form-control" id="phoneNumber" placeholder="08xx-xxxx-xxxx">
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Alamat Lengkap</label>
+        <textarea class="form-control" id="address" rows="3" placeholder="Masukkan alamat lengkap"></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Kode Pos</label>
+        <input type="text" class="form-control" id="postalCode" placeholder="12345">
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="closeModal()">Batal</button>
+        <button class="btn btn-success" onclick="saveProfile()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    Berhasil disimpan
+  </div>
+
+  <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(registration => {
+        console.log('SW registered:', registration);
+      }).catch(err => {
+        console.log('SW registration failed:', err);
+      });
+    }
+
+    // Toggle Switches
+    document.querySelectorAll('.toggle-switch').forEach(toggle => {
+      toggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+        saveSettings();
+      });
+    });
+
+    // Modal Functions
+    function openProfileModal() {
+      document.getElementById('profileModal').classList.add('active');
+      loadProfile();
+    }
+
+    function closeModal() {
+      document.getElementById('profileModal').classList.remove('active');
+    }
+
+    function saveProfile() {
+      const profile = {
+        name: document.getElementById('receiverName').value,
+        phone: document.getElementById('phoneNumber').value,
+        address: document.getElementById('address').value,
+        postalCode: document.getElementById('postalCode').value
+      };
+      
+      localStorage.setItem('userProfile', JSON.stringify(profile));
+      closeModal();
+      showToast('Profile berhasil disimpan');
+    }
+
+    function loadProfile() {
+      const saved = localStorage.getItem('userProfile');
+      if (saved) {
+        const profile = JSON.parse(saved);
+        document.getElementById('receiverName').value = profile.name || '';
+        document.getElementById('phoneNumber').value = profile.phone || '';
+        document.getElementById('address').value = profile.address || '';
+        document.getElementById('postalCode').value = profile.postalCode || '';
+      }
+    }
+
+    function saveSettings() {
+      const settings = {
+        autoFill: document.getElementById('autoFillToggle').classList.contains('active'),
+        smartNav: document.getElementById('smartNavToggle').classList.contains('active')
+      };
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+      
+      if (settings.autoFill) {
+        showToast('Auto-fill diaktifkan');
+      }
+    }
+
+    function testAutoFill() {
+      showToast('Testing auto-fill...');
+    }
+
+    function quickAction() {
+      if (document.getElementById('autoFillToggle').classList.contains('active')) {
+        showToast('Auto-fill activated');
+      } else {
+        showToast('Aktifkan Auto-Fill terlebih dahulu');
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function showTutorial() {
+      alert('Cara Penggunaan:\n\n' +
+            '1. Isi data profile terlebih dahulu\n' +
+            '2. Aktifkan Auto-Fill Mode\n' +
+            '3. Buka TikTok Shop\n' +
+            '4. Data akan terisi otomatis saat checkout\n' +
+            '5. Klik tombol "Bayar" untuk menyelesaikan\n\n' +
+            'Selamat berbelanja!');
+    }
+
+    function manageAddresses() {
+      showToast('Fitur alamat tersimpan akan segera hadir');
+    }
+
+    // Load saved settings on startup
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) {
+        const settings = JSON.parse(saved);
+        if (settings.autoFill) {
+          document.getElementById('autoFillToggle').classList.add('active');
+        }
+        if (settings.smartNav) {
+          document.getElementById('smartNavToggle').classList.add('active');
+        }
+      }
+    });
+
+    // Bottom nav interaction
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
